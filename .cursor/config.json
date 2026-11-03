@@ -1,0 +1,45 @@
+{
+  "automation": {
+    "enabled": true,
+    "commands": {
+      "/approve": {
+        "enabled": true,
+        "workflow": "develop",
+        "description": "批准开发"
+      },
+      "/scan": {
+        "enabled": true,
+        "workflow": "scan-requirements",
+        "description": "扫描需求"
+      }
+    },
+    "schedule": {
+      "scan_requirements": {
+        "enabled": false,
+        "cron": "0 9 * * *",
+        "workflow": "scan-requirements"
+      }
+    },
+    "workflows": {
+      "develop": {
+        "create_branch": true,
+        "run_tests": true,
+        "create_pr": true,
+        "pr_draft": true
+      },
+      "scan-requirements": {
+        "check_todos": true,
+        "check_coverage": true,
+        "check_dependencies": false,
+        "create_issues": true
+      }
+    }
+  },
+  "project": {
+    "name": "Agent-Automate",
+    "type": "experimental",
+    "language": "javascript",
+    "test_command": "npm test",
+    "build_command": "npm run build"
+  }
+}
