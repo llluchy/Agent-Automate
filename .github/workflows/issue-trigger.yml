@@ -1,0 +1,39 @@
+name: Issue触发开发
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger:
+    if: |
+      contains(github.event.comment.body, '/approve') &&
+      (github.event.comment.user.login == github.repository_owner ||
+       contains(fromJSON('["COLLABORATOR", "OWNER", "MEMBER"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 添加触发标签
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --add-label "cursor-approved"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 回复确认
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --body "✅ 已添加 \`cursor-approved\` 标签
+            
+Cursor Agent将在检测到标签后开始开发。
+
+预计流程：
+- 🔄 创建开发分支
+- 💻 实现功能
+- 🧪 运行测试
+- 📬 创建Draft PR
+
+---
+*由GitHub Actions自动触发*"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
