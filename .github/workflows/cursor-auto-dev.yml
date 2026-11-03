@@ -1,0 +1,91 @@
+name: Cursor自动开发
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger-cursor-agent:
+    # 只在评论包含 /approve 时触发
+    if: contains(github.event.comment.body, '/approve')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+      
+      - name: 确认触发
+        run: |
+          echo "🚀 检测到 /approve 命令"
+          echo "📋 Issue: #${{ github.event.issue.number }}"
+          echo "👤 评论者: ${{ github.event.comment.user.login }}"
+      
+      - name: 调用Cursor API创建Agent
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 获取Issue信息
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY=$(gh issue view $ISSUE_NUMBER --json body -q .body)
+          
+          # 调用Cursor API创建Cloud Agent
+          RESPONSE=$(curl -X POST "https://api.cursor.com/v1/agents" \
+            -H "Authorization: Bearer ${CURSOR_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "environment": "${{ vars.CURSOR_ENVIRONMENT_ID }}",
+              "task": "开发Issue #'"${ISSUE_NUMBER}"': '"${ISSUE_TITLE}"'\n\n详细内容：\n'"${ISSUE_BODY}"'\n\n要求：\n1. 创建开发分支\n2. 实现功能\n3. 编写测试\n4. 创建PR",
+              "repository": "${{ github.repository }}",
+              "branch": "main",
+              "metadata": {
+                "issue_number": '"${ISSUE_NUMBER}"',
+                "trigger": "github_actions",
+                "triggered_by": "${{ github.event.comment.user.login }}"
+              }
+            }')
+          
+          # 提取Agent ID
+          AGENT_ID=$(echo "$RESPONSE" | jq -r '.id')
+          AGENT_URL=$(echo "$RESPONSE" | jq -r '.url')
+          
+          echo "✅ Cursor Agent已创建"
+          echo "Agent ID: ${AGENT_ID}"
+          echo "Agent URL: ${AGENT_URL}"
+          
+          # 在Issue中回复
+          gh issue comment $ISSUE_NUMBER --body "🤖 **Cursor Agent已启动**
+
+🔗 **Agent链接**: ${AGENT_URL}
+
+Agent正在处理此Issue，完成后会自动创建PR。
+
+---
+*由GitHub Actions自动触发*"
+
+      - name: 等待Agent完成（可选）
+        if: false  # 默认不等待，可以改为true
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          # 轮询Agent状态
+          AGENT_ID="从上一步获取"
+          
+          while true; do
+            STATUS=$(curl -s "https://api.cursor.com/v1/agents/${AGENT_ID}" \
+              -H "Authorization: Bearer ${CURSOR_API_KEY}" \
+              | jq -r '.status')
+            
+            echo "Agent状态: ${STATUS}"
+            
+            if [ "$STATUS" = "completed" ]; then
+              echo "✅ Agent完成"
+              break
+            elif [ "$STATUS" = "failed" ]; then
+              echo "❌ Agent失败"
+              exit 1
+            fi
+            
+            sleep 30
+          done
