@@ -1,4 +1,9 @@
 {
+  "cursor": {
+    "environment_id": "env_agent_automate_main",
+    "memory_file": ".cursor/memory.json",
+    "context_file": ".cursor/context.json"
+  },
   "automation": {
     "enabled": true,
     "commands": {
@@ -40,6 +45,11 @@
     "type": "experimental",
     "language": "javascript",
     "test_command": "npm test",
-    "build_command": "npm run build"
+    "build_command": "npm run build",
+    "framework": "none",
+    "architecture": {
+      "style": "modular",
+      "patterns": ["automation", "cli-tools"]
+    }
   }
 }

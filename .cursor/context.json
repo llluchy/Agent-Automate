@@ -1,0 +1,100 @@
+{
+  "project": {
+    "name": "Agent-Automate",
+    "repository": "https://github.com/llluchy/Agent-Automate",
+    "environment_type": "experimental"
+  },
+  
+  "current_focus": [
+    "建立GitHub Actions + Cursor集成",
+    "确保多项目独立上下文",
+    "简化新项目配置流程"
+  ],
+  
+  "active_features": [
+    "Issue评论触发开发",
+    "GitHub Actions自动化",
+    "多项目Environment管理"
+  ],
+  
+  "tech_stack": {
+    "core": {
+      "language": "javascript",
+      "runtime": "node",
+      "package_manager": "npm"
+    },
+    "automation": {
+      "ci_cd": "GitHub Actions",
+      "agent_platform": "Cursor Cloud Agent"
+    },
+    "tools": {
+      "version_control": "git",
+      "issue_tracking": "GitHub Issues",
+      "code_review": "GitHub Pull Requests"
+    }
+  },
+  
+  "dependencies": {
+    "runtime": [],
+    "development": [],
+    "automation": [
+      "gh CLI",
+      "jq",
+      "curl"
+    ]
+  },
+  
+  "file_structure": {
+    "important_paths": {
+      ".cursor/": "Cursor配置和自动化脚本",
+      ".github/workflows/": "GitHub Actions工作流",
+      ".cursor/automations/": "Agent指令文档",
+      ".cursor/config.json": "项目配置",
+      ".cursor/memory.json": "Agent记忆",
+      ".cursor/context.json": "项目上下文（本文件）"
+    }
+  },
+  
+  "recent_changes": [
+    {
+      "date": "2026-11-03",
+      "change": "添加GitHub Actions集成",
+      "reason": "解决多项目Automation管理问题"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "引入Environment隔离",
+      "reason": "确保每个项目独立上下文"
+    }
+  ],
+  
+  "workflow": {
+    "development": {
+      "trigger": "Issue评论 /approve",
+      "steps": [
+        "GitHub Actions添加cursor-approved标签",
+        "Cursor Automation检测标签",
+        "Agent读取项目配置和记忆",
+        "Agent开发功能",
+        "创建PR"
+      ]
+    },
+    "testing": {
+      "commands": {
+        "unit": "npm test",
+        "integration": "npm run test:integration",
+        "lint": "npm run lint"
+      }
+    }
+  },
+  
+  "environment_variables": {
+    "required": [
+      "CURSOR_API_KEY",
+      "GITHUB_TOKEN"
+    ],
+    "optional": [
+      "CURSOR_ENVIRONMENT_ID"
+    ]
+  }
+}
