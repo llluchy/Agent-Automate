@@ -2,83 +2,33 @@ name: 每日需求扫描
 
 on:
   schedule:
-    # 每天早上9点（UTC时间1点 = 北京时间9点）
-    - cron: '0 1 * * *'
-  workflow_dispatch:  # 允许手动触发测试
+    - cron: '0 1 * * *'  # 每天UTC 1:00 = 北京时间9:00
+  workflow_dispatch:
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       
-      - name: 扫描TODO和FIXME
-        id: scan-todos
+      - name: 扫描代码
+        id: scan
         run: |
-          echo "### 发现的待办事项" > report.md
-          echo "" >> report.md
-          
-          # 扫描TODO/FIXME，排除.git目录
-          if grep -rn --exclude-dir=.git --exclude-dir=node_modules "TODO\|FIXME" . 2>/dev/null; then
-            grep -rn --exclude-dir=.git --exclude-dir=node_modules "TODO\|FIXME" . | while read line; do
-              echo "- $line" >> report.md
-            done
+          echo "扫描TODO/FIXME..." > report.txt
+          if grep -rn --exclude-dir=.git "TODO\|FIXME" . 2>/dev/null > todos.txt; then
+            cat todos.txt >> report.txt
             echo "found=true" >> $GITHUB_OUTPUT
           else
+            echo "未发现待办事项" >> report.txt
             echo "found=false" >> $GITHUB_OUTPUT
-            echo "未发现待办事项" >> report.md
           fi
       
-      - name: 检查测试覆盖率
-        id: scan-coverage
-        continue-on-error: true
-        run: |
-          echo "" >> report.md
-          echo "### 测试覆盖率分析" >> report.md
-          echo "" >> report.md
-          
-          # 查找没有测试的重要文件
-          # 这里简化处理，可以根据项目实际情况调整
-          echo "- 待添加更详细的覆盖率分析" >> report.md
-      
-      - name: 生成需求建议
-        run: |
-          echo "" >> report.md
-          echo "### 改进建议" >> report.md
-          echo "" >> report.md
-          echo "基于扫描结果，建议：" >> report.md
-          echo "1. 处理上述TODO/FIXME注释" >> report.md
-          echo "2. 补充测试用例" >> report.md
-          echo "3. 更新文档" >> report.md
-      
       - name: 创建Issue
-        if: steps.scan-todos.outputs.found == 'true'
-        run: |
-          ISSUE_TITLE="[AI扫描] $(date +%Y-%m-%d) 每日需求扫描"
-          
-          gh issue create \
-            --title "$ISSUE_TITLE" \
-            --body "$(cat report.md)
-
----
-
-**审批方式**：
-- 批准开发：评论 \`/approve\`
-- 拒绝：关闭此Issue
-
-**标签说明**：
-- \`ai-proposed\` - AI提议，等待审批
-- \`cursor-approved\` - 已批准，等待开发
-
----
-*由每日自动扫描生成 · $(date '+%Y-%m-%d %H:%M:%S UTC')*" \
-            --label "ai-proposed,automated-scan"
+        if: steps.scan.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 输出报告
         run: |
-          echo "扫描完成"
-          cat report.md
+          gh issue create \
+            --title "[AI扫描] $(date +%Y-%m-%d) 发现待办事项" \
+            --body "$(cat report.txt)" \
+            --label "ai-proposed"
