@@ -1,8 +1,12 @@
-name: Issue触发Cursor开发
+name: Issue触发Cursor开发（已废弃）
+
+# ⚠️ 此workflow已被 issue-conversation.yml 替代
+# 新workflow支持更自然的对话模式，无需/approve触发
 
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:  # 改为手动触发，默认不运行
+  # issue_comment:
+  #   types: [created]
 
 permissions:
   contents: write
