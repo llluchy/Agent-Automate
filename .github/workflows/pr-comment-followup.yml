@@ -1,0 +1,95 @@
+name: PR评论触发Agent Follow-up
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  followup:
+    # 只在PR评论且包含@agent时触发
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '@agent')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 获取PR关联的Issue和Agent ID
+        id: info
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # 获取PR详情
+          PR_NUM=${{ github.event.issue.number }}
+          
+          # 从PR body中提取关联的Issue编号
+          PR_BODY=$(gh pr view $PR_NUM --json body -q .body)
+          ISSUE_NUM=$(echo "$PR_BODY" | grep -oP 'Closes #\K\d+' || echo "")
+          
+          if [ -n "$ISSUE_NUM" ]; then
+            echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+            
+            # 从Issue标签中提取Agent ID
+            AGENT_ID=$(gh issue view $ISSUE_NUM --json labels -q '.labels[].name' | grep '^agent:' | cut -d: -f2)
+            
+            if [ -n "$AGENT_ID" ]; then
+              echo "agent_id=$AGENT_ID" >> $GITHUB_OUTPUT
+              echo "has_agent=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_agent=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_agent=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 发送Follow-up到Agent
+        if: steps.info.outputs.has_agent == 'true'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          # 提取评论内容（移除@agent标记）
+          COMMENT_TEXT="${{ github.event.comment.body }}"
+          PROMPT_TEXT=$(echo "$COMMENT_TEXT" | sed 's/@agent//g' | xargs)
+          
+          PAYLOAD=$(jq -n \
+            --arg prompt "$PROMPT_TEXT" \
+            '{
+              prompt: { text: $prompt }
+            }')
+          
+          RESPONSE=$(curl -X POST "https://api.cursor.com/v1/agents/${{ steps.info.outputs.agent_id }}/runs" \
+            -u "${CURSOR_API_KEY}:" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          
+          RUN_ID=$(echo "$RESPONSE" | jq -r '.run.id // "unknown"')
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        id: followup
+      
+      - name: 回复确认
+        if: steps.info.outputs.has_agent == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} \
+            --body "✅ **已发送给Agent**
+
+🤖 Agent ID: \`${{ steps.info.outputs.agent_id }}\`
+🏃 New Run: \`${{ steps.followup.outputs.run_id }}\`
+
+Agent正在处理你的反馈..."
+      
+      - name: 提示Agent不存在
+        if: steps.info.outputs.has_agent == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.issue.number }} \
+            --body "⚠️ 未找到关联的Agent
+
+此PR可能不是由Agent创建的，或者Agent信息丢失。
+如需AI协助修改，请在关联的Issue中评论 \`/approve\` 重新启动Agent。"

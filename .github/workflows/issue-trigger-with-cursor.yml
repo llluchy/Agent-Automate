@@ -79,18 +79,31 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
           
-          # 提取Agent URL
+          # 提取Agent信息
+          AGENT_ID=$(echo "$RESPONSE" | jq -r '.agent.id // "unknown"')
           AGENT_URL=$(echo "$RESPONSE" | jq -r '.agent.url // "启动中"')
+          RUN_ID=$(echo "$RESPONSE" | jq -r '.run.id // "unknown"')
+          
+          echo "agent_id=${AGENT_ID}" >> $GITHUB_OUTPUT
           echo "agent_url=${AGENT_URL}" >> $GITHUB_OUTPUT
+          echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
         id: cursor
       
-      - name: 回复确认
+      - name: 回复确认并记录Agent ID
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           gh issue comment ${{ github.event.issue.number }} \
-            --body "✅ Cursor Agent已启动
+            --body "✅ **Cursor Agent已启动**
 
-Agent链接: ${{ steps.cursor.outputs.agent_url }}
+🤖 Agent: [\`${{ steps.cursor.outputs.agent_id }}\`](${{ steps.cursor.outputs.agent_url }})
+🏃 Run: \`${{ steps.cursor.outputs.run_id }}\`
 
-Agent将自动开发此Issue"
+Agent正在开发此Issue，完成后会自动创建Draft PR。
+
+---
+💡 查看进度：[打开Agent Dashboard](${{ steps.cursor.outputs.agent_url }})"
+          
+          # 添加agent-id标签，方便后续follow-up
+          gh issue edit ${{ github.event.issue.number }} \
+            --add-label "agent:${{ steps.cursor.outputs.agent_id }}"
