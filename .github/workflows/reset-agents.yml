@@ -1,0 +1,62 @@
+name: 重置Agent（管理工具）
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_type:
+        description: '要重置的Agent类型'
+        required: true
+        type: choice
+        options:
+          - scanning
+          - integration
+          - all
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 重置Scanning Agent
+        if: inputs.agent_type == 'scanning' || inputs.agent_type == 'all'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # 获取当前Agent ID（如果存在）
+          OLD_AGENT_ID=$(gh variable get SCANNING_AGENT_ID 2>/dev/null || echo "无")
+          
+          # 删除变量
+          gh variable delete SCANNING_AGENT_ID 2>/dev/null || true
+          
+          echo "✅ Scanning Agent已重置"
+          echo "旧Agent ID: $OLD_AGENT_ID"
+          echo "下次运行将创建新Agent"
+      
+      - name: 重置Integration Agent
+        if: inputs.agent_type == 'integration' || inputs.agent_type == 'all'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # 获取当前Agent ID（如果存在）
+          OLD_AGENT_ID=$(gh variable get INTEGRATION_AGENT_ID 2>/dev/null || echo "无")
+          
+          # 删除变量
+          gh variable delete INTEGRATION_AGENT_ID 2>/dev/null || true
+          
+          echo "✅ Integration Agent已重置"
+          echo "旧Agent ID: $OLD_AGENT_ID"
+          echo "下次运行将创建新Agent"
+      
+      - name: 总结
+        run: |
+          echo "🎯 重置完成"
+          echo ""
+          echo "重置类型: ${{ inputs.agent_type }}"
+          echo ""
+          echo "📝 说明："
+          echo "- Scanning Agent: 下次定时扫描时会创建新Agent"
+          echo "- Integration Agent: 下次PR review时会创建新Agent"
+          echo ""
+          echo "⚠️ 注意：旧Agent的记忆将丢失，但历史对话仍可在Dashboard查看"
