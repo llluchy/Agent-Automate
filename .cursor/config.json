@@ -3,7 +3,7 @@
     "environment": {
       "enabled": true,
       "type": "cloud",
-      "name": "llluchy/Agent-Automate"
+      "name": "Agent-Automate"
     },
     "memory_file": ".cursor/memory.json",
     "context_file": ".cursor/context.json",
