@@ -15,31 +15,35 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: 读取项目配置
-        id: config
+      - name: 读取Prompt
+        id: prompt
         run: |
-          ENV_ID=$(jq -r '.cursor.environment_id // "env_default"' .cursor/config.json 2>/dev/null || echo "env_default")
-          echo "environment_id=${ENV_ID}" >> $GITHUB_OUTPUT
+          PROMPT=$(cat .cursor/prompts/daily-scan.txt)
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       
       - name: 调用Cursor Agent分析需求
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          PROMPT_TEXT=$(cat <<'PROMPT_EOF'
+          ${{ steps.prompt.outputs.prompt }}
+          PROMPT_EOF
+          )
+          
+          PAYLOAD=$(jq -n \
+            --arg prompt "$PROMPT_TEXT" \
+            --arg repo "https://github.com/${{ github.repository }}" \
+            --arg token "$GH_TOKEN" \
+            '{
+              prompt: { text: $prompt },
+              repos: [{ url: $repo, startingRef: "main" }],
+              envVars: { GH_TOKEN: $token }
+            }')
+          
           curl -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"prompt\": {
-                \"text\": \"分析代码库并创建改进需求Issues：\\n1. 扫描代码中的TODO/FIXME注释\\n2. 检查测试覆盖率，找出缺少测试的重要功能\\n3. 分析代码质量，发现可以重构的地方\\n4. 检查依赖更新\\n5. 思考可行的功能改进\\n\\n对每个发现的需求：\\n- 使用gh CLI创建Issue\\n- 标题格式：[AI提议] 简短描述\\n- 标签：ai-proposed\\n- 内容包含：详细说明、优先级、风险评估\\n\\n创建3-5个最有价值的Issues。\"
-              },
-              \"repos\": [
-                {
-                  \"url\": \"https://github.com/${{ github.repository }}\",
-                  \"startingRef\": \"main\"
-                }
-              ],
-              \"envVars\": {
-                \"GH_TOKEN\": \"${GH_TOKEN}\"
-              }
-            }"
+            -d "$PAYLOAD"

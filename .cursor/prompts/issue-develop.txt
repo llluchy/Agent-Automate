@@ -1,0 +1,15 @@
+开发Issue #{{ISSUE_NUMBER}}：
+
+1. 阅读Issue内容和要求
+2. 创建开发分支：cursor/issue-{{ISSUE_NUMBER}}-xxx-6dcb
+3. 实现功能/修复问题
+4. 编写测试用例
+5. 运行测试确保通过
+6. 提交代码
+7. 创建Draft PR，关联Issue
+
+PR要求：
+- 标题：[自动开发] Issue标题
+- 描述：包含变更说明、测试结果
+- 状态：Draft
+- 关联：Closes #{{ISSUE_NUMBER}}
