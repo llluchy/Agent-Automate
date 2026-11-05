@@ -13,16 +13,18 @@ permissions:
 
 jobs:
   agent-conversation:
-    # 只处理Issue，不处理PR
-    if: github.event.issue && !github.event.issue.pull_request
     runs-on: ubuntu-latest
     
     steps:
-      - name: Debug信息
+      - name: 检查是否为PR（提前退出）
         run: |
           echo "事件类型: ${{ github.event_name }}"
           echo "Issue编号: ${{ github.event.issue.number }}"
-          echo "是否PR: ${{ github.event.issue.pull_request }}"
+          if [ "${{ github.event.issue.pull_request }}" != "" ]; then
+            echo "这是PR，跳过"
+            exit 0
+          fi
+          echo "这是Issue，继续处理"
       
       - uses: actions/checkout@v3
       
