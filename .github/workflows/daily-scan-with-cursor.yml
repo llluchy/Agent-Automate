@@ -22,11 +22,19 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           curl -X POST "https://api.cursor.com/v1/agents" \
-            -H "Authorization: Bearer ${CURSOR_API_KEY}" \
+            -u "${CURSOR_API_KEY}:" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"environment\": \"${{ steps.config.outputs.environment_id }}\",
-              \"repository\": \"${{ github.repository }}\",
-              \"branch\": \"main\",
-              \"task\": \"分析代码库并创建改进需求Issues：\\n1. 扫描代码中的TODO/FIXME注释\\n2. 检查测试覆盖率，找出缺少测试的重要功能\\n3. 分析代码质量，发现可以重构的地方\\n4. 检查依赖更新\\n5. 思考可行的功能改进\\n\\n对每个发现的需求：\\n- 使用gh CLI创建Issue\\n- 标题格式：[AI提议] 简短描述\\n- 标签：ai-proposed\\n- 内容包含：详细说明、优先级、风险评估\\n\\n创建3-5个最有价值的Issues。\"
-            }"
+            -d '{
+              "prompt": {
+                "text": "分析代码库并创建改进需求Issues：\n1. 扫描代码中的TODO/FIXME注释\n2. 检查测试覆盖率，找出缺少测试的重要功能\n3. 分析代码质量，发现可以重构的地方\n4. 检查依赖更新\n5. 思考可行的功能改进\n\n对每个发现的需求：\n- 使用gh CLI创建Issue\n- 标题格式：[AI提议] 简短描述\n- 标签：ai-proposed\n- 内容包含：详细说明、优先级、风险评估\n\n创建3-5个最有价值的Issues。"
+              },
+              "repos": [
+                {
+                  "url": "https://github.com/${{ github.repository }}",
+                  "startingRef": "main"
+                }
+              ],
+              "model": {
+                "id": "composer-2"
+              }
+            }'
