@@ -34,9 +34,6 @@ jobs:
                   "startingRef": "main"
                 }
               ],
-              "model": {
-                "id": "composer-2"
-              },
               "autoCreatePR": true
             }')
           

@@ -33,8 +33,5 @@ jobs:
                   "url": "https://github.com/${{ github.repository }}",
                   "startingRef": "main"
                 }
-              ],
-              "model": {
-                "id": "composer-2"
-              }
+              ]
             }'
