@@ -46,17 +46,15 @@ jobs:
           PROMPT_EOF
           )
           
-          # 构建基础payload
+          # 构建payload（使用environment时不能指定repos）
           if [ "${{ steps.config.outputs.env_enabled }}" = "true" ]; then
             PAYLOAD=$(jq -n \
               --arg prompt "$PROMPT_TEXT" \
-              --arg repo "https://github.com/${{ github.repository }}" \
               --arg token "$GH_TOKEN" \
               --arg env_type "${{ steps.config.outputs.env_type }}" \
               --arg env_name "${{ steps.config.outputs.env_name }}" \
               '{
                 prompt: { text: $prompt },
-                repos: [{ url: $repo, startingRef: "main" }],
                 env: { type: $env_type, name: $env_name },
                 envVars: { GH_TOKEN: $token }
               }')
