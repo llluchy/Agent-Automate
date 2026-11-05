@@ -1,9 +1,9 @@
 {
   "cursor": {
     "environment": {
-      "enabled": false,
+      "enabled": true,
       "type": "cloud",
-      "name": "my-environment"
+      "name": "llluchy/Agent-Automate"
     },
     "memory_file": ".cursor/memory.json",
     "context_file": ".cursor/context.json",
