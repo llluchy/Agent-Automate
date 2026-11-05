@@ -1,0 +1,30 @@
+name: 测试Issue触发
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 简单测试
+        run: |
+          echo "Issue评论触发成功！"
+          echo "Issue: ${{ github.event.issue.number }}"
+          echo "评论者: ${{ github.event.comment.user.login }}"
+      
+      - name: 回复确认（可选）
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -f content='eyes' || echo "添加reaction失败（权限不足）"
