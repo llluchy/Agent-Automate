@@ -86,11 +86,8 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          PROMPT_TEXT: ${{ steps.prompt.outputs.prompt }}
         run: |
-          PROMPT_TEXT=$(cat <<'PROMPT_EOF'
-${{ steps.prompt.outputs.prompt }}
-PROMPT_EOF
-)
           
           if [ "${{ steps.check.outputs.has_agent }}" = "false" ]; then
             # 创建新Agent
