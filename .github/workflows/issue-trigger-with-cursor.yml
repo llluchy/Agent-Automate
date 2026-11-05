@@ -4,6 +4,11 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   trigger-cursor:
     if: contains(github.event.comment.body, '/approve')
@@ -20,22 +25,26 @@ jobs:
       - name: 调用Cursor API
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RESPONSE=$(curl -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
             -H "Content-Type: application/json" \
-            -d '{
-              "prompt": {
-                "text": "开发Issue #${{ github.event.issue.number }}：\n\n1. 阅读Issue内容和要求\n2. 创建开发分支：cursor/issue-${{ github.event.issue.number }}-xxx-6dcb\n3. 实现功能/修复问题\n4. 编写测试用例\n5. 运行测试确保通过\n6. 提交代码\n7. 创建Draft PR，关联Issue\n\nPR要求：\n- 标题：[自动开发] Issue标题\n- 描述：包含变更说明、测试结果\n- 状态：Draft\n- 关联：Closes #${{ github.event.issue.number }}"
+            -d "{
+              \"prompt\": {
+                \"text\": \"开发Issue #${{ github.event.issue.number }}：\\n\\n1. 阅读Issue内容和要求\\n2. 创建开发分支：cursor/issue-${{ github.event.issue.number }}-xxx-6dcb\\n3. 实现功能/修复问题\\n4. 编写测试用例\\n5. 运行测试确保通过\\n6. 提交代码\\n7. 创建Draft PR，关联Issue\\n\\nPR要求：\\n- 标题：[自动开发] Issue标题\\n- 描述：包含变更说明、测试结果\\n- 状态：Draft\\n- 关联：Closes #${{ github.event.issue.number }}\"
               },
-              "repos": [
+              \"repos\": [
                 {
-                  "url": "https://github.com/${{ github.repository }}",
-                  "startingRef": "main"
+                  \"url\": \"https://github.com/${{ github.repository }}\",
+                  \"startingRef\": \"main\"
                 }
               ],
-              "autoCreatePR": true
-            }')
+              \"autoCreatePR\": true,
+              \"envVars\": {
+                \"GH_TOKEN\": \"${GH_TOKEN}\"
+              }
+            }")
           
           # 提取Agent URL
           AGENT_URL=$(echo "$RESPONSE" | jq -r '.agent.url // "启动中"')
