@@ -1,8 +1,9 @@
 {
   "cursor": {
-    "environment_id": "env_agent_automate_main",
+    "environment_id": "env_default",
     "memory_file": ".cursor/memory.json",
-    "context_file": ".cursor/context.json"
+    "context_file": ".cursor/context.json",
+    "note": "修改 environment_id 为你的实际Environment ID，或保持 env_default 使用默认环境"
   },
   "automation": {
     "enabled": true,
