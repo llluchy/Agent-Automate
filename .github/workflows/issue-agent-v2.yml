@@ -72,19 +72,8 @@ jobs:
           COMMENT_BODY="${{ github.event.comment.body }}"
           
           if [ "${{ steps.check.outputs.has_agent }}" = "false" ]; then
-            # 首次创建Agent的prompt
-            PROMPT_TEXT="你好！我是Issue #${ISSUE_NUM} 的专属Agent。
-
-**Issue:** ${ISSUE_TITLE}
-
-**描述:** ${ISSUE_BODY}
-
-**用户评论:** ${COMMENT_BODY:-（Issue刚创建）}
-
----
-我们可以先讨论需求，确认后我会开发。你有什么想法？"
+            PROMPT_TEXT="你好！我是Issue #${ISSUE_NUM} 的专属Agent。Issue: ${ISSUE_TITLE}。描述: ${ISSUE_BODY}。用户评论: ${COMMENT_BODY:-（Issue刚创建）}。我们可以先讨论需求，确认后我会开发。"
           else
-            # Follow-up的prompt
             PROMPT_TEXT="${COMMENT_BODY}"
           fi
           
