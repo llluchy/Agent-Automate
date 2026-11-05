@@ -21,6 +21,12 @@ jobs:
       
       - uses: actions/checkout@v3
       
+      - name: Read config
+        id: config
+        run: |
+          ENV_NAME=$(jq -r '.cursor.environment.name' .cursor/config.json)
+          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+      
       - name: Check agent
         id: check
         env:
@@ -45,7 +51,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "prompt": {"text": "Hello, I am the agent for Issue #${{ github.event.issue.number }}"},
-              "env": {"type": "cloud", "name": "llluchy/Agent-Automate"},
+              "env": {"type": "cloud", "name": "${{ steps.config.outputs.env_name }}"},
               "envVars": {"GH_TOKEN": "'"$GH_TOKEN"'"}
             }')
           
