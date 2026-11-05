@@ -74,12 +74,15 @@ jobs:
           fi
           
           echo "✅ Agent创建成功: $AGENT_ID"
-          gh issue comment ${{ github.event.issue.number }} --body "🤖 **Agent已关联此Issue**
+          
+          COMMENT_BODY="🤖 **Agent已关联此Issue**
 
 Agent ID: $AGENT_ID
 Agent URL: https://cursor.com/agents/$AGENT_ID
 
 💡 后续在此Issue的评论会自动发送给Agent"
+          
+          gh issue comment ${{ github.event.issue.number }} --body "$COMMENT_BODY"
       
       - name: Follow-up到已有Agent
         if: steps.check.outputs.has_agent == 'true'
