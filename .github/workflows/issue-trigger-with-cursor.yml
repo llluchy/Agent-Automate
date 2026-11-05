@@ -16,9 +16,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: 读取并处理Prompt
-        id: prompt
+      - name: 读取配置和Prompt
+        id: config
         run: |
+          # 读取环境配置
+          ENV_ENABLED=$(jq -r '.cursor.environment.enabled // false' .cursor/config.json)
+          if [ "$ENV_ENABLED" = "true" ]; then
+            ENV_TYPE=$(jq -r '.cursor.environment.type' .cursor/config.json)
+            ENV_NAME=$(jq -r '.cursor.environment.name' .cursor/config.json)
+            echo "env_enabled=true" >> $GITHUB_OUTPUT
+            echo "env_type=$ENV_TYPE" >> $GITHUB_OUTPUT
+            echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "env_enabled=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # 读取并处理Prompt
           PROMPT_TEMPLATE=$(cat .cursor/prompts/issue-develop.txt)
           PROMPT_TEXT="${PROMPT_TEMPLATE//\{\{ISSUE_NUMBER\}\}/${{ github.event.issue.number }}}"
           echo "prompt<<EOF" >> $GITHUB_OUTPUT
@@ -31,20 +44,37 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PROMPT_TEXT=$(cat <<'PROMPT_EOF'
-          ${{ steps.prompt.outputs.prompt }}
+          ${{ steps.config.outputs.prompt }}
           PROMPT_EOF
           )
           
-          PAYLOAD=$(jq -n \
-            --arg prompt "$PROMPT_TEXT" \
-            --arg repo "https://github.com/${{ github.repository }}" \
-            --arg token "$GH_TOKEN" \
-            '{
-              prompt: { text: $prompt },
-              repos: [{ url: $repo, startingRef: "main" }],
-              autoCreatePR: true,
-              envVars: { GH_TOKEN: $token }
-            }')
+          # 构建payload（根据是否启用环境）
+          if [ "${{ steps.config.outputs.env_enabled }}" = "true" ]; then
+            PAYLOAD=$(jq -n \
+              --arg prompt "$PROMPT_TEXT" \
+              --arg repo "https://github.com/${{ github.repository }}" \
+              --arg token "$GH_TOKEN" \
+              --arg env_type "${{ steps.config.outputs.env_type }}" \
+              --arg env_name "${{ steps.config.outputs.env_name }}" \
+              '{
+                prompt: { text: $prompt },
+                repos: [{ url: $repo, startingRef: "main" }],
+                env: { type: $env_type, name: $env_name },
+                autoCreatePR: true,
+                envVars: { GH_TOKEN: $token }
+              }')
+          else
+            PAYLOAD=$(jq -n \
+              --arg prompt "$PROMPT_TEXT" \
+              --arg repo "https://github.com/${{ github.repository }}" \
+              --arg token "$GH_TOKEN" \
+              '{
+                prompt: { text: $prompt },
+                repos: [{ url: $repo, startingRef: "main" }],
+                autoCreatePR: true,
+                envVars: { GH_TOKEN: $token }
+              }')
+          fi
           
           RESPONSE=$(curl -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
