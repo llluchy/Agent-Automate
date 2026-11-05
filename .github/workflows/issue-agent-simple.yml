@@ -46,14 +46,24 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          ISSUE_TITLE=$(gh issue view ${{ github.event.issue.number }} --json title -q .title)
+          ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q .body)
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          
+          PROMPT="Issue: $ISSUE_TITLE
+          
+$ISSUE_BODY
+
+User comment: $COMMENT_BODY"
+          
           RESPONSE=$(curl -s -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
             -H "Content-Type: application/json" \
-            -d '{
-              "prompt": {"text": "Hello, I am the agent for Issue #${{ github.event.issue.number }}"},
-              "env": {"type": "cloud", "name": "${{ steps.config.outputs.env_name }}"},
-              "envVars": {"GH_TOKEN": "'"$GH_TOKEN"'"}
-            }')
+            -d "$(jq -n \
+              --arg text "$PROMPT" \
+              --arg env_name "${{ steps.config.outputs.env_name }}" \
+              --arg token "$GH_TOKEN" \
+              '{prompt: {text: $text}, env: {type: "cloud", name: $env_name}, envVars: {GH_TOKEN: $token}}')")
           
           AGENT_ID=$(echo "$RESPONSE" | jq -r '.agent.id // empty')
           
