@@ -74,6 +74,14 @@ Agent将使用Cursor的默认云环境，自动安装依赖。
 
 ## 注意事项
 
-- Environment名称区分大小写
+- **Environment名称区分大小写**
+- **启用environment时，repository由environment自动提供，无需在API中指定**
 - 不配置environment时使用默认云环境（推荐新项目）
 - 复杂项目建议创建专属environment预装依赖
+
+## API规则
+
+**⚠️ 重要：`env.name` 与 `repos` 互斥**
+
+- `enabled: true` → 只传 `env`，Environment自带repository配置
+- `enabled: false` → 只传 `repos`，使用默认环境
