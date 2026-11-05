@@ -1,0 +1,45 @@
+name: 每日需求挖掘
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 每天UTC 1:00 = 北京9:00
+  workflow_dispatch:
+
+jobs:
+  trigger-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 读取项目配置
+        id: config
+        run: |
+          ENV_ID=$(jq -r '.cursor.environment_id // "env_default"' .cursor/config.json 2>/dev/null || echo "env_default")
+          echo "environment_id=${ENV_ID}" >> $GITHUB_OUTPUT
+      
+      - name: 调用Cursor Agent分析需求
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          curl -X POST "https://api.cursor.com/v1/agents" \
+            -H "Authorization: Bearer ${CURSOR_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"environment\": \"${{ steps.config.outputs.environment_id }}\",
+              \"repository\": \"${{ github.repository }}\",
+              \"branch\": \"main\",
+              \"task\": \"分析代码库并创建改进需求Issues：
+1. 扫描代码中的TODO/FIXME注释
+2. 检查测试覆盖率，找出缺少测试的重要功能
+3. 分析代码质量，发现可以重构的地方
+4. 检查依赖更新
+5. 思考可行的功能改进
+
+对每个发现的需求：
+- 使用gh CLI创建Issue
+- 标题格式：[AI提议] 简短描述
+- 标签：ai-proposed
+- 内容包含：详细说明、优先级、风险评估
+
+创建3-5个最有价值的Issues。\"
+            }"

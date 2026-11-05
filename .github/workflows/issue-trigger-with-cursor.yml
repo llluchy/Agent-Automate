@@ -1,0 +1,66 @@
+name: Issue触发Cursor开发
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger-cursor:
+    if: contains(github.event.comment.body, '/approve')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 读取配置
+        id: config
+        run: |
+          ENV_ID=$(jq -r '.cursor.environment_id // "env_default"' .cursor/config.json 2>/dev/null || echo "env_default")
+          echo "environment_id=${ENV_ID}" >> $GITHUB_OUTPUT
+      
+      - name: 调用Cursor API
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          RESPONSE=$(curl -X POST "https://api.cursor.com/v1/agents" \
+            -H "Authorization: Bearer ${CURSOR_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"environment\": \"${{ steps.config.outputs.environment_id }}\",
+              \"repository\": \"${{ github.repository }}\",
+              \"branch\": \"main\",
+              \"task\": \"开发Issue #${{ github.event.issue.number }}：
+
+1. 阅读Issue内容和要求
+2. 创建开发分支：cursor/issue-${{ github.event.issue.number }}-xxx-6dcb
+3. 实现功能/修复问题
+4. 编写测试用例
+5. 运行测试确保通过
+6. 提交代码
+7. 创建Draft PR，关联Issue
+
+PR要求：
+- 标题：[自动开发] Issue标题
+- 描述：包含变更说明、测试结果
+- 状态：Draft
+- 关联：Closes #${{ github.event.issue.number }}\",
+              \"metadata\": {
+                \"issue_number\": ${{ github.event.issue.number }},
+                \"triggered_by\": \"${{ github.event.comment.user.login }}\"
+              }
+            }")
+          
+          # 提取Agent URL
+          AGENT_URL=$(echo "$RESPONSE" | jq -r '.url // "启动中"')
+          echo "agent_url=${AGENT_URL}" >> $GITHUB_OUTPUT
+        id: cursor
+      
+      - name: 回复确认
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --body "✅ Cursor Agent已启动
+
+Agent链接: ${{ steps.cursor.outputs.agent_url }}
+
+Agent将自动开发此Issue"
