@@ -42,6 +42,7 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          echo "🚀 调用Cursor API创建Agent..."
           RESPONSE=$(curl -s -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
             -H "Content-Type: application/json" \
@@ -58,7 +59,18 @@ jobs:
               }
             }')
           
-          AGENT_ID=$(echo "$RESPONSE" | jq -r '.agent.id')
+          echo "📋 API响应:"
+          echo "$RESPONSE" | jq '.'
+          
+          AGENT_ID=$(echo "$RESPONSE" | jq -r '.agent.id // empty')
+          
+          if [ -z "$AGENT_ID" ]; then
+            echo "❌ 创建Agent失败，API返回:"
+            echo "$RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ Agent创建成功: $AGENT_ID"
           gh issue edit ${{ github.event.issue.number }} --add-label "agent:$AGENT_ID"
           gh issue comment ${{ github.event.issue.number }} --body "🤖 Agent已创建: $AGENT_ID"
       
