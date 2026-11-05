@@ -52,7 +52,7 @@ jobs:
               },
               "env": {
                 "type": "cloud",
-                "name": "llluchy/Agent-Automate"
+                "name": "Agent-Automate"
               },
               "envVars": {
                 "GH_TOKEN": "'"$GH_TOKEN"'"
