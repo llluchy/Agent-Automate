@@ -50,11 +50,7 @@ jobs:
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q .body)
           COMMENT_BODY="${{ github.event.comment.body }}"
           
-          PROMPT="Issue: $ISSUE_TITLE
-          
-$ISSUE_BODY
-
-User comment: $COMMENT_BODY"
+          PROMPT=$(printf 'Issue: %s\n\n%s\n\nUser comment: %s' "$ISSUE_TITLE" "$ISSUE_BODY" "$COMMENT_BODY")
           
           RESPONSE=$(curl -s -X POST "https://api.cursor.com/v1/agents" \
             -u "${CURSOR_API_KEY}:" \
