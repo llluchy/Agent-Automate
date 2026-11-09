@@ -2,7 +2,7 @@ name: 每日需求挖掘
 
 on:
   schedule:
-    - cron: '* * * * *'
+    - cron: '0 0 8 * * ?'
   workflow_dispatch:
 
 permissions:
