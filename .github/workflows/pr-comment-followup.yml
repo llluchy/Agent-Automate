@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       
       - name: 获取PR关联的Issue和Agent ID
         id: info
@@ -50,10 +50,9 @@ jobs:
         if: steps.info.outputs.has_agent == 'true'
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          COMMENT_TEXT: ${{ github.event.comment.body }}
         run: |
-          # 提取评论内容（移除@agent标记）
-          COMMENT_TEXT="${{ github.event.comment.body }}"
-          PROMPT_TEXT=$(echo "$COMMENT_TEXT" | sed 's/@agent//g' | xargs)
+          PROMPT_TEXT=$(printf '%s' "$COMMENT_TEXT" | sed 's/@agent//g' | xargs)
           
           PAYLOAD=$(jq -n \
             --arg prompt "$PROMPT_TEXT" \
@@ -74,22 +73,16 @@ jobs:
         if: steps.info.outputs.has_agent == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          AGENT_ID: ${{ steps.info.outputs.agent_id }}
+          RUN_ID: ${{ steps.followup.outputs.run_id }}
         run: |
-          gh pr comment ${{ github.event.issue.number }} \
-            --body "✅ **已发送给Agent**
-
-🤖 Agent ID: \`${{ steps.info.outputs.agent_id }}\`
-🏃 New Run: \`${{ steps.followup.outputs.run_id }}\`
-
-Agent正在处理你的反馈..."
+          BODY=$(printf '%s\n' "已发送给Agent" "Agent ID: $AGENT_ID" "New Run: $RUN_ID" "Agent正在处理你的反馈")
+          gh pr comment "${{ github.event.issue.number }}" --body "$BODY"
       
       - name: 提示Agent不存在
         if: steps.info.outputs.has_agent == 'false'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          gh pr comment ${{ github.event.issue.number }} \
-            --body "⚠️ 未找到关联的Agent
-
-此PR可能不是由Agent创建的，或者Agent信息丢失。
-如需AI协助修改，请在关联的Issue中评论 \`/approve\` 重新启动Agent。"
+          BODY=$(printf '%s\n' "未找到关联的Agent" "此PR可能不是由Agent创建的，或者Agent信息丢失。" "如需AI协助修改，请在关联的Issue中评论 /approve 重新启动Agent。")
+          gh pr comment "${{ github.event.issue.number }}" --body "$BODY"
