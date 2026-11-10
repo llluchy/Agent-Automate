@@ -19,7 +19,7 @@ jobs:
             exit 0
           fi
       
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       
       - name: Read config
         id: config
@@ -45,10 +45,10 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           ISSUE_TITLE=$(gh issue view ${{ github.event.issue.number }} --json title -q .title)
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q .body)
-          COMMENT_BODY="${{ github.event.comment.body }}"
           
           PROMPT=$(printf 'Issue: %s\n\n%s\n\nUser comment: %s' "$ISSUE_TITLE" "$ISSUE_BODY" "$COMMENT_BODY")
           
