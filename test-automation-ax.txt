@@ -1,0 +1,6 @@
+# Issue AX 能力测试
+
+- Issue: https://github.com/llluchy/Agent-Automate/issues/61
+- 编号: AX
+- 说明: 按评论「创建任意PR」提交的最小变更，用于验证 Agent 可以创建 Pull Request。
+- 时间: 2026-11-10
